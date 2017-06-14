@@ -1,22 +1,21 @@
-
 require 'rails_helper'
 
 RSpec.describe ChannelsController, type: :controller do
   include Devise::Test::ControllerHelpers
 
   before(:each) do
-    request.env["HTTP_ACCEPT"] = 'aplication/json'
+    request.env["HTTP_ACCEPT"] = 'application/json'
 
     @request.env["devise.mapping"] = Devise.mappings[:user]
     @current_user = FactoryGirl.create(:user)
     sign_in @current_user
   end
 
-  describe 'POST #create' do
-    #renderiza os jsons
+  describe "POST #create" do
+    # Sem isto os testes não renderizam o json
     render_views
 
-    context "when user is a team member" do
+    context "User is Team member" do
       before(:each) do
         @team = create(:team)
         @team.users << @current_user
@@ -25,17 +24,17 @@ RSpec.describe ChannelsController, type: :controller do
         post :create, params: {channel: @channel_attributes.merge(team_id: @team.id)}
       end
 
-      it 'returns http success' do
+      it "returns http success" do
         expect(response).to have_http_status(:success)
       end
 
-      it 'channel is created with right params' do
+      it "Channel is created with right params" do
         expect(Channel.last.slug).to eql(@channel_attributes[:slug])
         expect(Channel.last.user).to eql(@current_user)
         expect(Channel.last.team).to eql(@team)
       end
 
-      it 'return right values to channel' do
+      it "Return right values to channel" do
         response_hash = JSON.parse(response.body)
 
         expect(response_hash["user_id"]).to eql(@current_user.id)
@@ -44,39 +43,40 @@ RSpec.describe ChannelsController, type: :controller do
       end
     end
 
-    context "when user isn't team member" do
+    context "User isn't Team member" do
       before(:each) do
         @team = create(:team)
         @channel_attributes = attributes_for(:channel, team: @team)
         post :create, params: {channel: @channel_attributes.merge(team_id: @team.id)}
       end
 
-      it 'returns http forbidden' do
+      it "returns http forbidden" do
         expect(response).to have_http_status(:forbidden)
       end
     end
   end
 
-  describe 'GET #show' do
+  describe "GET #show" do
+    # Sem isto os testes não renderizam o json
     render_views
 
-    context "when user is a team member" do
+    context "User is team member" do
       before(:each) do
         team = create(:team, user: @current_user)
         @channel = create(:channel, team: team)
 
-        @message1 = create(:message)
-        @message2 = create(:message)
+        @message1 = build(:message)
+        @message2 = build(:message)
         @channel.messages << [@message1, @message2]
 
         get :show, params: {id: @channel.id}
       end
 
-      it 'returns http success' do
+      it "returns http success" do
         expect(response).to have_http_status(:success)
       end
 
-      it 'returns right channel values' do
+      it "returns right channel values" do
         response_hash = JSON.parse(response.body)
 
         expect(response_hash["slug"]).to eql(@channel.slug)
@@ -84,12 +84,12 @@ RSpec.describe ChannelsController, type: :controller do
         expect(response_hash["team_id"]).to eql(@channel.team.id)
       end
 
-      it 'return the right number of messages' do
+      it "Return the right number of messages" do
         response_hash = JSON.parse(response.body)
         expect(response_hash["messages"].count).to eql(2)
       end
 
-      it 'return the right messages' do
+      it "Return the right messages" do
         response_hash = JSON.parse(response.body)
         expect(response_hash["messages"][0]["body"]).to eql(@message1.body)
         expect(response_hash["messages"][0]["user_id"]).to eql(@message1.user.id)
@@ -98,25 +98,25 @@ RSpec.describe ChannelsController, type: :controller do
       end
     end
 
-    context "when user is not a team member" do
-      it 'return http forbidden' do
+    context "User is not team member" do
+      it "returns http forbidden" do
         channel = create(:channel)
         get :show, params: {id: channel.id}
 
-        expect(response)to have_http_status(:forbidden)
+        expect(response).to have_http_status(:forbidden)
       end
     end
   end
 
-  describe 'DELETE #destroy' do
-    context "when User is a team member" do
-      context "when user is the channel owner" do
-        it 'return hhtp success' do
+  describe "DELETE #destroy" do
+    context "User is team member" do
+      context "User is the channel owner" do
+        it "returns http success" do
           team = create(:team)
           team.users << @current_user
           @channel = create(:channel, team: team, user: @current_user)
 
-          delete :destroy, params {id: @channel.id}
+          delete :destroy, params: {id: @channel.id}
           expect(response).to have_http_status(:success)
         end
       end
@@ -147,11 +147,11 @@ RSpec.describe ChannelsController, type: :controller do
 
     context "User isn't team member" do
       it "returns http forbidden" do
-       team = create(:team)
-       @channel = create(:channel, team: team)
+        team = create(:team)
+        @channel = create(:channel, team: team)
 
-       delete :destroy, params: {id: @channel.id}
-       expect(response).to have_http_status(:forbidden)
+        delete :destroy, params: {id: @channel.id}
+        expect(response).to have_http_status(:forbidden)
       end
     end
   end
